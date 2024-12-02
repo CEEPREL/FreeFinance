@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @RestController
 @RequestMapping("/auth")
@@ -17,17 +19,23 @@ public class AuthController {
     @Autowired
     private UserRepo userRepo;
 
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
+
     @PostMapping("/signup")
-    public ResponseEntity<User> register(@RequestBody User user){
+    public ResponseEntity<User> register(@RequestBody User user) {
 
-        User newUser = new User();
-        newUser.setEmail(user.getEmail());
-        newUser.setPassword(user.getPassword());
-        newUser.setEmail(user.getEmail());
-        newUser.setFullName(user.getFullName());
+        User isEmailExist = userRepo.findByEmail(user.getEmail());
 
-        User savedUser = userRepo.save(newUser);
+        if (isEmailExist != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
+        }
+
+        // Encrypt the password before saving
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        User savedUser = userRepo.save(user);
 
         return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
-    };
+    }
 }
