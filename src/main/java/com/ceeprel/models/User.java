@@ -27,9 +27,12 @@ public class User {
     @Enumerated(EnumType.STRING)
     private USER_ROLE role = USER_ROLE.CUSTOMER_ROLE;
 
-    private String region;  // Track user's current region (e.g., country, city)
+    private String region;
+    private boolean isActive = true;
+    private String lastKnownLocation;
 
-    private boolean isActive = true;  // Track if user account is active/inactive
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    private LocalDateTime createdAt = LocalDateTime.now();  // Auto-set creation time
+    // Add verificationCode field
+    private String verificationCode;
 }

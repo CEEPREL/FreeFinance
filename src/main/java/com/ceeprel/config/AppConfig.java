@@ -1,24 +1,33 @@
 package com.ceeprel.config;
 
+import com.ceeprel.repo.UserRepo;
+import com.ceeprel.security.CustomUserDetails;  // Import the CustomUserDetails class
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 public class AppConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.sessionManagement(management->management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(Authorize->Authorize.requestMatchers("/api/**").authenticated()
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(Authorize -> Authorize.requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
                 .addFilterBefore(new JwtTokenValidator(), BasicAuthenticationFilter.class)
-                .csrf(csrf->csrf.disable())
-                .cors(cors->cors.configurationSource(corsConfigurationSource()));
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()));
         return http.build();
     }
 
@@ -26,5 +35,28 @@ public class AppConfig {
         return null;
     }
 
+    @Bean
+    public UserDetailsService userDetailsService(UserRepo userRepo) {
+        return username -> userRepo.findByEmail(username)
+                .map(CustomUserDetails::new)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    }
 
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService, BCryptPasswordEncoder passwordEncoder) {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder);
+        return authProvider;
+    }
 }
