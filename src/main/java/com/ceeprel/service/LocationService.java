@@ -11,13 +11,15 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Service
 public class LocationService {
 
-    @Value("${geolocation.api.key}") // Fetch API key from properties file
+    @Value("${geolocation.api.key}")
     private String apiKey;
 
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
 
-    public LocationService(RestTemplate restTemplate) {
+    public LocationService(RestTemplate restTemplate, ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
     }
 
     public Location getLocationFromIp(String ipAddress) {
@@ -25,7 +27,6 @@ public class LocationService {
 
         try {
             String response = restTemplate.getForObject(apiUrl, String.class);
-            ObjectMapper objectMapper = new ObjectMapper();
             return objectMapper.readValue(response, Location.class);
 
         } catch (JsonProcessingException e) {
